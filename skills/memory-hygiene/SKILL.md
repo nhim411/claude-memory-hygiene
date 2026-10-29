@@ -1,0 +1,40 @@
+---
+name: memory-hygiene
+description: Keep Claude Code auto-memory (~/.claude/projects/<project>/memory) small, current and trustworthy. Use when writing or updating a memory, when the SessionStart hook says "Memory upkeep due", when the user asks to clean up / audit / refactor memory ("dọn memory", "memory cũ", "audit memory", "cập nhật MEMORY.md"), when a memory contradicts the code, after closing a work item that has project memories, or when onboarding a project's memory to this scheme ("migrate memory").
+---
+
+# Memory hygiene
+
+Full guideline: `${CLAUDE_PLUGIN_ROOT}/docs/memory-system.md` — read it before the first
+memory write or cleanup of a session. Scripts take `[memory_dir]`; default is the memory dir
+of the current working directory.
+
+## Commands
+
+| Need | Run |
+|---|---|
+| Onboard an existing memory dir | `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/memory-migrate.py` then index |
+| Rebuild `MEMORY.md` | `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/memory-index.py` |
+| Is the index current? | `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/memory-index.py --check` |
+| Full audit (report only) | `bash ${CLAUDE_PLUGIN_ROOT}/scripts/memory-audit.sh [memory_dir] [repo_root] [max_age_days]` |
+
+## Writing a memory
+
+1. Grep the memory dir; update an existing file instead of adding a duplicate.
+2. If the fact belongs in a rule, skill or knowledge doc, put it there instead (guideline §1).
+3. Frontmatter `metadata`: `type`, `source` (user only if the user said it), `verified` (today),
+   `status: active`. Absolute dates.
+4. Rebuild the index.
+
+## Upkeep (when nudged or asked)
+
+Run the audit, then per finding:
+
+- **stale** → re-check against code / tracker / command output; bump `verified`, fix, or supersede.
+- **broken path** → fix the path; if it names something removed, drop the backticks.
+- **closed work item** → lesson left: promote it, then `status: superseded` + `superseded_by`; none: `status: done`.
+- **codified elsewhere** → `status: superseded`, `superseded_by: <path or skill>`.
+
+Never delete files (non-active files are history) unless the user asks. Never change the
+meaning of a `source: user` memory without asking. Finish with the index rebuild and report
+counts before → after (entries, bytes) plus what stays unverified.

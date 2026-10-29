@@ -1,0 +1,14 @@
+{
+  "name": "nhim411-memory-hygiene",
+  "owner": {
+    "name": "nhim411"
+  },
+  "plugins": [
+    {
+      "name": "memory-hygiene",
+      "source": "./",
+      "description": "Auto-memory metadata, generated index, audit and upkeep nudge."
+    }
+  ],
+  "description": "Memory hygiene plugin for Claude Code auto-memory"
+}
