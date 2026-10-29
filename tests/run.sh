@@ -61,8 +61,10 @@ U=$(mktemp -d)/.claude/projects/x/memory; mkdir -p "$U"
 printf '{"tool_input":{"file_path":"%s/a.md"}}' "$U" | python3 "$S/memory-usage.py"
 printf '{"tool_input":{"file_path":"%s/MEMORY.md"}}' "$U" | python3 "$S/memory-usage.py"
 printf '{"tool_input":{"file_path":"/etc/hosts"}}' | python3 "$S/memory-usage.py"
+printf '{"tool_input":{"command":"grep -n foo %s/b.md %s/MEMORY.md"}}' "$U" "$U" | python3 "$S/memory-usage.py"
 echo 'not json' | python3 "$S/memory-usage.py"; rc=$?
-ok "logs memory file reads only" '[ "$(grep -c "a.md" "$U/.usage.log")" -eq 1 ] && [ "$(wc -l < "$U/.usage.log")" -eq 2 ]'
+ok "logs memory file reads only" '[ "$(grep -c "a.md" "$U/.usage.log")" -eq 1 ] && [ "$(wc -l < "$U/.usage.log")" -eq 3 ]'
+ok "logs reads via Bash commands" 'grep -q "b.md" "$U/.usage.log"'
 ok "bad input never fails the hook" '[ "$rc" -eq 0 ]'
 
 echo "# unused + duplicates"
