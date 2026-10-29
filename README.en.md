@@ -1,25 +1,64 @@
-# memory-hygiene
+# 🧠 memory-hygiene
 
 [Tiếng Việt](README.md) | **English**
 
-A Claude Code plugin that keeps auto-memory **small, current and trustworthy**, in every project.
+[![test](https://github.com/nhim411/claude-memory-hygiene/actions/workflows/test.yml/badge.svg)](https://github.com/nhim411/claude-memory-hygiene/actions/workflows/test.yml)
+![Claude Code plugin](https://img.shields.io/badge/Claude%20Code-plugin-d97757)
+![License: MIT](https://img.shields.io/badge/license-MIT-blue)
 
-Claude Code already writes memories on its own (`~/.claude/projects/<project>/memory/`).
-Left alone, they pile up: stale facts, duplicates, paths that no longer exist, and an index
-that is loaded into *every* session. This plugin keeps that in check with almost no effort from you.
+### Claude remembering more is not better. Remembering right is.
 
-## Quick start
+Claude Code's auto-memory only ever grows. After a few months every session loads dozens of
+stale, duplicated notes pointing at files that no longer exist, and Claude may quietly act on a
+"fact" that stopped being true last month.
+
+**memory-hygiene** keeps memory **small, current and trustworthy**: two commands to install, zero config.
+
+## ✨ Real results on a live project
+
+| | Before | After |
+|---|---|---|
+| Index entries (loaded into **every** session) | 60 | **40** |
+| Index size | 11.8 KB | **7.0 KB** (about 1.2k fewer tokens per session) |
+| Memories with source + verified date | 0 | **100%** |
+| Wrong "facts" caught | — | a renamed route, a merged PR still noted as "pending"… |
+| Added session-start time | — | **~0.07 s** (cached) |
+
+## 🚀 Highlights
+
+- **🔍 Knows when a memory went wrong.** A file the memory cites got commits after it was last
+  verified? You are told. That is the most precise signal that a note may be stale.
+- **🧹 Auto-fixes the certain, asks about the rest.** Index and metadata are repaired every session.
+  Content changes are proposed by Claude with evidence, and you approve.
+- **🛡️ What you said stays as you said it.** `source: user` memories are never rewritten by Claude
+  on its own.
+- **📉 The index stays small.** Size and line budgets, plus a report of memories nobody opened in 60 days.
+- **⬆️ Stable rules graduate to team rules.** `/memory-hygiene:promote` drafts project rules from
+  what you keep repeating, so the whole team benefits.
+- **🕰️ History is kept.** Old facts are marked `superseded`, never deleted.
+- **⚡ Lightweight.** bash + python3 + git. No database, no embeddings, no network.
+  CI on Linux and macOS.
+
+```text
+$ claude          # start a session as usual
+Memory upkeep due: stale=1 code-changed=1 … Run /memory-hygiene:clean when the current task allows.
+
+> /memory-hygiene:clean
+| File              | Memory says                    | Code now                        | Action |
+| ci-pipeline.md    | "Dockerfile tuning pending"    | PR 2857 merged 2026-10-15       | Fix    |
+| cdp-click.md      | route /features/[a]/[b]        | /features/[...featurePath]      | Fix    |
+Approve and I will apply the changes and rebuild the index.
+```
+
+## ⏱️ Install in 30 seconds
 
 ```text
 /plugin marketplace add nhim411/claude-memory-hygiene
 /plugin install memory-hygiene@nhim411-memory-hygiene
 ```
 
-Restart Claude Code, then in each project say once:
-
-> migrate memory
-
-That's it. From then on:
+Restart Claude Code. **That's it**: on the first session in each project the plugin adds metadata
+to your existing memories and rebuilds the index. From then on:
 
 | You | The plugin |
 |---|---|

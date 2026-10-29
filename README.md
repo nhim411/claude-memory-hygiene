@@ -1,25 +1,64 @@
-# memory-hygiene
+# 🧠 memory-hygiene
 
 **Tiếng Việt** | [English](README.en.md)
 
-Plugin cho Claude Code giúp auto-memory luôn **gọn, đúng và đáng tin**, dùng được cho mọi dự án.
+[![test](https://github.com/nhim411/claude-memory-hygiene/actions/workflows/test.yml/badge.svg)](https://github.com/nhim411/claude-memory-hygiene/actions/workflows/test.yml)
+![Claude Code plugin](https://img.shields.io/badge/Claude%20Code-plugin-d97757)
+![License: MIT](https://img.shields.io/badge/license-MIT-blue)
 
-Claude Code tự ghi memory vào `~/.claude/projects/<project>/memory/`. Để lâu sẽ phình ra:
-thông tin cũ, trùng lặp, đường dẫn không còn tồn tại, và một file index bị nạp vào *mọi* phiên làm việc.
-Plugin này giữ mọi thứ gọn gàng mà bạn gần như không phải làm gì.
+### Claude nhớ nhiều chưa chắc đã tốt. Nhớ đúng mới tốt.
 
-## Bắt đầu nhanh
+Auto-memory của Claude Code chỉ ghi thêm, không bao giờ tự dọn. Sau vài tháng, mỗi phiên làm việc
+phải nạp hàng chục ghi chú cũ, trùng lặp, trỏ tới file đã bị xoá. Claude có thể làm theo một
+"sự thật" đã sai từ tháng trước mà không ai hay.
+
+**memory-hygiene** giữ memory **gọn, đúng và đáng tin**: cài 2 lệnh, không phải cấu hình gì.
+
+## ✨ Kết quả thật trên một dự án đang chạy
+
+| | Trước | Sau |
+|---|---|---|
+| Mục trong index (nạp vào **mọi** phiên) | 60 | **40** |
+| Kích thước index | 11.8 KB | **7.0 KB** (bớt khoảng 1.2k token mỗi phiên) |
+| Memory có nguồn + ngày xác minh | 0 | **100%** |
+| "Sự thật" đã sai được phát hiện | — | route đã đổi, PR đã merge mà memory vẫn ghi "đang chờ"… |
+| Thời gian thêm vào lúc mở phiên | — | **~0.07 giây** (có cache) |
+
+## 🚀 Tính năng nổi bật
+
+- **🔍 Biết khi nào memory đã sai.** Một file mà memory nhắc tới có commit mới sau lần xác minh?
+  Plugin báo ngay. Đây là tín hiệu chính xác nhất rằng một ghi nhớ có thể đã lỗi thời.
+- **🧹 Tự dọn phần chắc chắn, hỏi bạn phần cần phán đoán.** Index và metadata được sửa tự động mỗi phiên.
+  Nội dung thì Claude đề xuất kèm bằng chứng, bạn duyệt.
+- **🛡️ Điều bạn dặn thì không ai được tự sửa.** Memory ghi `source: user` có quyền cao nhất:
+  Claude không bao giờ tự ý thay đổi.
+- **📉 Index luôn nhỏ.** Có giới hạn kích thước, độ dài dòng, và báo memory không ai đọc suốt 60 ngày.
+- **⬆️ Luật ổn định lên rules của team.** `/memory-hygiene:promote` soạn sẵn rule từ những gì bạn
+  đã dặn đi dặn lại, để cả team cùng dùng.
+- **🕰️ Không mất lịch sử.** Thông tin cũ được đánh dấu `superseded`, không bị xoá.
+- **⚡ Nhẹ.** Chỉ bash + python3 + git. Không database, không embedding, không gọi mạng.
+  CI chạy trên Linux và macOS.
+
+```text
+$ claude          # mở phiên như bình thường
+Memory upkeep due: stale=1 code-changed=1 … Run /memory-hygiene:clean when the current task allows.
+
+> /memory-hygiene:clean
+| File              | Memory nói                     | Code hiện tại                   | Đề xuất |
+| ci-pipeline.md    | "tối ưu Dockerfile đang chờ"   | PR 2857 đã merge 2026-10-15     | Fix     |
+| cdp-click.md      | route /features/[a]/[b]        | /features/[...featurePath]      | Fix     |
+Đồng ý thì tôi áp dụng và dựng lại index.
+```
+
+## ⏱️ Cài đặt trong 30 giây
 
 ```text
 /plugin marketplace add nhim411/claude-memory-hygiene
 /plugin install memory-hygiene@nhim411-memory-hygiene
 ```
 
-Khởi động lại Claude Code, rồi trong mỗi dự án nói một lần:
-
-> migrate memory
-
-Vậy là xong. Từ đó về sau:
+Khởi động lại Claude Code. **Vậy là xong**: lần mở phiên đầu tiên ở mỗi dự án, plugin tự thêm metadata
+cho memory sẵn có và dựng lại index. Từ đó về sau:
 
 | Bạn | Plugin |
 |---|---|
