@@ -25,7 +25,9 @@ Vậy là xong. Từ đó về sau:
 |---|---|
 | làm việc bình thường | mỗi lần mở phiên tự sửa index và điền metadata còn thiếu, không làm phiền |
 | thấy dòng `Memory upkeep due: …` | không bắt buộc làm gì; rảnh thì xử lý |
-| nói **"dọn memory"** / **"clean up memory"** | kiểm tra, xác minh lại thông tin cũ, đề xuất thay đổi, dựng lại index |
+| gõ **`/memory-hygiene:clean`** (hoặc nói "dọn memory") | kiểm tra, xác minh lại thông tin cũ, đề xuất thay đổi, dựng lại index |
+| gõ **`/memory-hygiene:audit`** | chỉ xem báo cáo, không sửa gì |
+| gõ **`/memory-hygiene:promote`** | soạn nháp để chuyển luật ổn định lên rules của dự án |
 | nói **"nhớ giúp …"** / **"remember …"** | lưu lại với đúng loại, nguồn và ngày |
 
 ## Memory được lưu ở đâu
@@ -98,10 +100,13 @@ flowchart TD
     E --> F{"Có việc cần phán đoán?"}
     F -->|không| Z
     F -->|có| G["In 1 dòng:<br/>Memory upkeep due: stale=… code-changed=…"]
-    G --> H["Khi rảnh: 'dọn memory'<br/>→ Claude xác minh, đề xuất, bạn duyệt"]
+    G --> H["Khi rảnh: /memory-hygiene:clean<br/>→ Claude xác minh, đề xuất, bạn duyệt"]
     classDef auto fill:#e6f4ea,stroke:#34a853
     class C,D,E auto
 ```
+
+Kết quả audit được cache cho tới khi memory, git HEAD hoặc ngày thay đổi, nên mở phiên gần như tức thì.
+Ngoài ra, mỗi lần Claude mở một file memory, hook ghi lại vào `memory/.usage.log` để biết memory nào thật sự được dùng.
 
 Bước 1–3 (màu xanh) chạy tự động và luôn cho cùng một kết quả. Plugin **không bao giờ tự sửa nội dung**
 của memory: phần đó cần phán đoán nên để Claude đề xuất và bạn duyệt.
@@ -115,6 +120,11 @@ của memory: phần đó cần phán đoán nên để Claude đề xuất và 
 | **broken path** | đường dẫn trong repo không còn | sửa đường dẫn |
 | **over budget** | index > 8 KB, > 45 mục, hoặc dòng > 200 ký tự | rút gọn, promote, supersede |
 | **promote candidates** | luật của bạn ổn định > 30 ngày | chuyển lên rules của dự án |
+| **unused** | 60 ngày không được mở (theo dõi bằng hook) | bỏ khỏi index hoặc supersede |
+| **related pairs** | hai memory có nhiều từ chung, có thể trùng | đọc cả hai, gộp nếu nói cùng một điều |
+
+Ba dòng cuối chỉ hiện trong báo cáo `/memory-hygiene:audit`, không làm hiện dòng nhắc đầu phiên.
+`unused` chỉ bắt đầu báo sau khi đã theo dõi đủ 60 ngày.
 
 Ví dụ thật: một memory nói "tối ưu Dockerfile đang chờ làm" và nhắc tới `backend/docker/Production.Dockerfile`.
 File đó có 2 commit sau ngày `verified`, nên audit báo **code changed**. Claude kiểm tra và thấy PR đã merge,
@@ -140,6 +150,9 @@ Hướng dẫn đầy đủ (tiếng Anh): [`docs/memory-system.md`](docs/memory
 | `MEMORY_INDEX_MAX_BYTES` | 8000 |
 | `MEMORY_INDEX_MAX_ENTRIES` | 45 |
 | `MEMORY_INDEX_MAX_LINE` | 200 |
+| `MEMORY_UNUSED_DAYS` | 60 |
+| `MEMORY_DUP_THRESHOLD` | 0.4 |
+| `MEMORY_HYGIENE_NO_CACHE` | (đặt bất kỳ giá trị nào để tắt cache) |
 | `MEMORY_HYGIENE_DIR` | thư mục memory suy ra từ thư mục đang mở |
 
 ## Lệnh chạy tay

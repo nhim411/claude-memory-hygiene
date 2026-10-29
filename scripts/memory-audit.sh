@@ -78,6 +78,8 @@ grep -oE '\(([^)]+\.md)\)' "$idx" | tr -d '()' | while read -r b; do
   [ -f "$MEM/$b" ] || echo "  index points to missing file: $b"
 done
 
+python3 "$(dirname "$0")/memory-signals.py" "$MEM" "${MEMORY_UNUSED_DAYS:-60}"
+
 MAX_BYTES="${MEMORY_INDEX_MAX_BYTES:-8000}"
 MAX_ENTRIES="${MEMORY_INDEX_MAX_ENTRIES:-45}"
 MAX_LINE="${MEMORY_INDEX_MAX_LINE:-200}"

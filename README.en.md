@@ -25,7 +25,9 @@ That's it. From then on:
 |---|---|
 | work normally | fixes the index and missing metadata at every session start, silently |
 | see `Memory upkeep due: …` | nothing required; act on it when you have a minute |
-| say **"clean up memory"** / **"dọn memory"** | audits, re-checks stale facts, proposes changes, rebuilds the index |
+| type **`/memory-hygiene:clean`** (or say "clean up memory") | audits, re-checks stale facts, proposes changes, rebuilds the index |
+| type **`/memory-hygiene:audit`** | report only, changes nothing |
+| type **`/memory-hygiene:promote`** | drafts stable rules into project rules |
 | say **"remember …"** | stores it with the right type, source and date |
 
 ## Where memory lives
@@ -98,10 +100,13 @@ flowchart TD
     E --> F{"Anything needing judgment?"}
     F -->|no| Z
     F -->|yes| G["Print 1 line:<br/>Memory upkeep due: stale=… code-changed=…"]
-    G --> H["When convenient: 'clean up memory'<br/>→ Claude verifies, proposes, you approve"]
+    G --> H["When convenient: /memory-hygiene:clean<br/>→ Claude verifies, proposes, you approve"]
     classDef auto fill:#e6f4ea,stroke:#34a853
     class C,D,E auto
 ```
+
+The audit result is cached until memory, git HEAD or the date changes, so session start is near-instant.
+Each time Claude opens a memory file, a hook logs it to `memory/.usage.log`, so the plugin knows which memories are actually used.
 
 Steps 1–3 (green) are automatic and deterministic. The plugin **never edits what a memory says**;
 that needs judgment, so Claude proposes and you approve.
@@ -115,6 +120,11 @@ that needs judgment, so Claude proposes and you approve.
 | **broken path** | a cited repo path is gone | fix the path |
 | **over budget** | index > 8 KB, > 45 entries, or a line > 200 chars | shorten, promote, supersede |
 | **promote candidates** | your rule stable > 30 days | move it to project rules |
+| **unused** | not opened for 60 days (tracked by a hook) | drop from index or supersede |
+| **related pairs** | two memories share many words, may duplicate | read both, merge if they say the same |
+
+The last three show only in the `/memory-hygiene:audit` report; they do not trigger the session nudge.
+`unused` starts reporting once 60 days of usage have been tracked.
 
 Real example: a memory said "Dockerfile optimisation pending" and cited `backend/docker/Production.Dockerfile`.
 That file got 2 commits after `verified`, so the audit raised **code changed**. Claude checked, found the PR
@@ -141,6 +151,9 @@ Full guideline: [`docs/memory-system.md`](docs/memory-system.md).
 | `MEMORY_INDEX_MAX_BYTES` | 8000 |
 | `MEMORY_INDEX_MAX_ENTRIES` | 45 |
 | `MEMORY_INDEX_MAX_LINE` | 200 |
+| `MEMORY_UNUSED_DAYS` | 60 |
+| `MEMORY_DUP_THRESHOLD` | 0.4 |
+| `MEMORY_HYGIENE_NO_CACHE` | (set to anything to disable the cache) |
 | `MEMORY_HYGIENE_DIR` | memory dir derived from the current directory |
 
 ## Manual commands

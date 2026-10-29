@@ -50,4 +50,36 @@ echo "# budget"
 for i in $(seq 1 50); do printf -- '---\nname: p%s\ndescription: x\nmetadata:\n  type: project\n---\n' "$i" > "$M/p$i.md"; done
 out=$(run); ok "over budget flagged" 'grep -qE "over-budget=[1-9]" <<<"$out"'
 
+echo "# cache"
+out1=$(run); out2=$(run)
+ok "cached result identical" '[ "$out1" = "$out2" ]'
+printf -- '---\nname: z\ndescription: z\nmetadata:\n  type: project\n---\nSee `src/missing.py`.\n' > "$M/z.md"
+out3=$(run); ok "cache invalidated by memory change" 'grep -q "broken-paths=1" <<<"$out3" && [ "$out3" != "$out2" ]'
+
+echo "# usage log"
+U=$(mktemp -d)/.claude/projects/x/memory; mkdir -p "$U"
+printf '{"tool_input":{"file_path":"%s/a.md"}}' "$U" | python3 "$S/memory-usage.py"
+printf '{"tool_input":{"file_path":"%s/MEMORY.md"}}' "$U" | python3 "$S/memory-usage.py"
+printf '{"tool_input":{"file_path":"/etc/hosts"}}' | python3 "$S/memory-usage.py"
+echo 'not json' | python3 "$S/memory-usage.py"; rc=$?
+ok "logs memory file reads only" '[ "$(grep -c "a.md" "$U/.usage.log")" -eq 1 ] && [ "$(wc -l < "$U/.usage.log")" -eq 2 ]'
+ok "bad input never fails the hook" '[ "$rc" -eq 0 ]'
+
+echo "# unused + duplicates"
+D=$(mktemp -d)
+mk() { printf -- '---\nname: %s\ndescription: %s\nmetadata:\n  type: project\n  status: active\n---\n%s\n' "$1" "$2" "$3" > "$D/$1.md"; }
+mk used "staging deploy runbook" "deploy staging cluster with helm chart"
+mk idle "printer driver quirk" "office printer needs legacy driver"
+mk dupe "staging deploy steps" "deploy staging cluster using helm chart values"
+old=$(python3 -c "import datetime;print(datetime.date.today()-datetime.timedelta(days=90))")
+printf '# since\t%s\n%s\tused.md\n' "$old" "$(date +%F)" > "$D/.usage.log"
+sig=$(python3 "$S/memory-signals.py" "$D" 60)
+ok "unused memory listed" 'sed -n "/Unused/,\$p" <<<"$sig" | grep -q idle.md'
+ok "used memory not listed" '! sed -n "/Unused/,\$p" <<<"$sig" | grep -q " used.md"'
+ok "related pair found" 'grep -q "dupe.md ~ used.md\|used.md ~ dupe.md" <<<"$sig"'
+ok "unrelated pair not found" '! grep -q "idle.md ~" <<<"$sig"'
+printf '# since\t%s\n' "$(date +%F)" > "$D/.usage.log"
+sig=$(python3 "$S/memory-signals.py" "$D" 60)
+ok "no unused report before window elapsed" '[ -z "$(sed -n "/Unused/,\$p" <<<"$sig" | grep "^  ")" ]'
+
 echo "$pass passed, $fail failed"; [ "$fail" -eq 0 ]

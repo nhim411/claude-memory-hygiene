@@ -2,6 +2,9 @@
   "hooks": {
     "SessionStart": [
       { "hooks": [ { "type": "command", "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/memory-health.sh\"", "timeout": 15 } ] }
+    ],
+    "PostToolUse": [
+      { "matcher": "Read", "hooks": [ { "type": "command", "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/scripts/memory-usage.py\"", "timeout": 5 } ] }
     ]
   }
 }
