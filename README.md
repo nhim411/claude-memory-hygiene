@@ -28,11 +28,50 @@ Vậy là xong. Từ đó về sau:
 | nói **"dọn memory"** / **"clean up memory"** | kiểm tra, xác minh lại thông tin cũ, đề xuất thay đổi, dựng lại index |
 | nói **"nhớ giúp …"** / **"remember …"** | lưu lại với đúng loại, nguồn và ngày |
 
+## Memory được lưu ở đâu
+
+Claude Code lưu memory **theo từng dự án**, bên ngoài repo, trong thư mục home của bạn:
+
+```text
+~/.claude/projects/
+└── -home-you-workspace-myapp/          ← đường dẫn dự án, "/" và "." đổi thành "-"
+    └── memory/
+        ├── MEMORY.md                   ← INDEX: nạp vào MỌI phiên (giữ nhỏ!)
+        ├── feedback-test-on-staging.md ← mỗi memory là 1 file, có frontmatter
+        ├── reference-stg-access.md
+        └── project-epic-123.md
+```
+
+- Memory chỉ nằm trên máy bạn, không commit, không chia sẻ cho team.
+- `MEMORY.md` là mục lục: mỗi dòng gồm tiêu đề, link tới file và một câu tóm tắt.
+  Claude đọc mục lục ở mỗi phiên, còn nội dung file chỉ mở khi cần.
+- Plugin cài vào `~/.claude/plugins/` (dùng chung mọi dự án) và tự tìm thư mục memory theo thư mục đang mở.
+
+Memory chỉ là **một trong nhiều nơi** lưu kiến thức. Kiến thức nào cũng nên về chỗ bền nhất của nó:
+
+```mermaid
+flowchart LR
+    N["Điều mới học được"] --> Q{"Nó là gì?"}
+    Q -->|"Luật luôn áp dụng cho repo"| R["AGENTS.md / rules<br/>(commit, cả team dùng)"]
+    Q -->|"Cách làm một loại việc"| S["Skill<br/>(nạp khi cần)"]
+    Q -->|"Bài học, lỗi hay gặp"| K["docs/knowledge<br/>(commit)"]
+    Q -->|"Sở thích của bạn, ngữ cảnh đang làm,<br/>link ngoài, luật chưa ổn định"| M["Memory<br/>(chỉ trên máy bạn)"]
+    M -. "ổn định rồi → promote" .-> R
+    M -. "thành bài học → promote" .-> K
+```
+
 ## Cách hoạt động
 
-```
-mở phiên ─► điền metadata thiếu ─► dựng lại MEMORY.md ─► audit ─► nhắc 1 dòng (chỉ khi cần)
-                 (tự động, kết quả luôn giống nhau)                 (bạn / Claude quyết định)
+### Vòng đời một memory
+
+```mermaid
+stateDiagram-v2
+    [*] --> active: Claude ghi memory<br/>(plugin điền source, verified, status)
+    active --> active: xác minh lại → cập nhật verified
+    active --> superseded: có fact mới thay thế,<br/>hoặc đã chuyển lên rules / skill / docs
+    active --> done: work item xong, không còn bài học
+    superseded --> [*]: giữ trên đĩa làm lịch sử,<br/>không còn trong MEMORY.md
+    done --> [*]
 ```
 
 Mỗi file memory có một ít metadata:
@@ -45,15 +84,41 @@ metadata:
   status: active | superseded | done
 ```
 
-Chỉ memory `active` xuất hiện trong `MEMORY.md`. File `superseded` / `done` vẫn giữ trên đĩa làm lịch sử.
+Chỉ memory `active` có mặt trong `MEMORY.md`.
 
-Audit phát hiện:
+### Mỗi lần mở phiên
 
-- **stale**: quá 45 ngày chưa xác minh
-- **code changed**: file mà memory nhắc tới có commit mới sau ngày `verified` (dùng git)
-- **broken path**: đường dẫn trong repo không còn tồn tại
-- **over budget**: index > 8 KB, > 45 mục, hoặc có dòng > 200 ký tự
-- **promote candidates**: luật của bạn đã ổn định một tháng, nên chuyển vào rules của dự án
+```mermaid
+flowchart TD
+    A(["Mở Claude Code trong dự án"]) --> B{"Có thư mục memory?"}
+    B -->|không| Z(["Im lặng"])
+    B -->|có| C["1. Điền metadata cho file mới<br/>(memory-migrate.py)"]
+    C --> D["2. Dựng lại MEMORY.md nếu lệch<br/>(memory-index.py)"]
+    D --> E["3. Audit<br/>(memory-audit.sh)"]
+    E --> F{"Có việc cần phán đoán?"}
+    F -->|không| Z
+    F -->|có| G["In 1 dòng:<br/>Memory upkeep due: stale=… code-changed=…"]
+    G --> H["Khi rảnh: 'dọn memory'<br/>→ Claude xác minh, đề xuất, bạn duyệt"]
+    classDef auto fill:#e6f4ea,stroke:#34a853
+    class C,D,E auto
+```
+
+Bước 1–3 (màu xanh) chạy tự động và luôn cho cùng một kết quả. Plugin **không bao giờ tự sửa nội dung**
+của memory: phần đó cần phán đoán nên để Claude đề xuất và bạn duyệt.
+
+### Audit kiểm tra gì
+
+| Dấu hiệu | Nghĩa là | Xử lý |
+|---|---|---|
+| **stale** | quá 45 ngày chưa xác minh | đối chiếu lại, cập nhật `verified` |
+| **code changed** | file mà memory nhắc tới có commit sau ngày `verified` (git) | đọc lại diff, sửa hoặc xác nhận |
+| **broken path** | đường dẫn trong repo không còn | sửa đường dẫn |
+| **over budget** | index > 8 KB, > 45 mục, hoặc dòng > 200 ký tự | rút gọn, promote, supersede |
+| **promote candidates** | luật của bạn ổn định > 30 ngày | chuyển lên rules của dự án |
+
+Ví dụ thật: một memory nói "tối ưu Dockerfile đang chờ làm" và nhắc tới `backend/docker/Production.Dockerfile`.
+File đó có 2 commit sau ngày `verified`, nên audit báo **code changed**. Claude kiểm tra và thấy PR đã merge,
+rồi cập nhật memory. Không có cơ chế này, phiên sau vẫn tin rằng việc còn đang chờ.
 
 ## Thiết kế: vì sao hiệu quả
 

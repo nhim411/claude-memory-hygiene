@@ -28,11 +28,50 @@ That's it. From then on:
 | say **"clean up memory"** / **"dọn memory"** | audits, re-checks stale facts, proposes changes, rebuilds the index |
 | say **"remember …"** | stores it with the right type, source and date |
 
+## Where memory lives
+
+Claude Code stores memory **per project**, outside the repo, in your home directory:
+
+```text
+~/.claude/projects/
+└── -home-you-workspace-myapp/          ← project path with "/" and "." turned into "-"
+    └── memory/
+        ├── MEMORY.md                   ← INDEX: loaded into EVERY session (keep it small!)
+        ├── feedback-test-on-staging.md ← one memory per file, with frontmatter
+        ├── reference-stg-access.md
+        └── project-epic-123.md
+```
+
+- Memory exists only on your machine. It is not committed and not shared with the team.
+- `MEMORY.md` is a table of contents: each line has a title, a link to the file and a one-line hook.
+  Claude reads the index every session and opens a file only when it needs it.
+- The plugin installs under `~/.claude/plugins/` (shared by all projects) and finds the memory dir from the current directory.
+
+Memory is only **one of several homes** for knowledge. Each piece should end up in its most durable home:
+
+```mermaid
+flowchart LR
+    N["Something learned"] --> Q{"What is it?"}
+    Q -->|"Rule that always applies to the repo"| R["AGENTS.md / rules<br/>(committed, whole team)"]
+    Q -->|"How to do a kind of task"| S["Skill<br/>(loaded on demand)"]
+    Q -->|"Lesson, recurring failure"| K["docs/knowledge<br/>(committed)"]
+    Q -->|"Your preference, live context,<br/>external pointer, unsettled rule"| M["Memory<br/>(your machine only)"]
+    M -. "stable → promote" .-> R
+    M -. "became a lesson → promote" .-> K
+```
+
 ## How it works
 
-```
-session start ─► fill missing metadata ─► rebuild MEMORY.md ─► audit ─► 1-line nudge (only if due)
-                        (automatic, deterministic)                       (you / Claude decide)
+### Life of a memory
+
+```mermaid
+stateDiagram-v2
+    [*] --> active: Claude writes a memory<br/>(plugin fills source, verified, status)
+    active --> active: re-checked → verified bumped
+    active --> superseded: replaced by a newer fact,<br/>or moved to rules / skill / docs
+    active --> done: work item closed, no lesson left
+    superseded --> [*]: kept on disk as history,<br/>dropped from MEMORY.md
+    done --> [*]
 ```
 
 Each memory file carries a little metadata:
@@ -45,15 +84,41 @@ metadata:
   status: active | superseded | done
 ```
 
-Only `active` memories appear in `MEMORY.md`. Superseded and done files stay on disk as history.
+Only `active` memories appear in `MEMORY.md`.
 
-The audit flags:
+### At every session start
 
-- **stale**: not verified for 45 days
-- **code changed**: a file the memory cites got commits after `verified` (via git)
-- **broken path**: a cited repo path no longer exists
-- **over budget**: index > 8 KB, > 45 entries, or a line > 200 chars
-- **promote candidates**: your rules that have been stable for a month and belong in project rules
+```mermaid
+flowchart TD
+    A(["Open Claude Code in a project"]) --> B{"Memory dir exists?"}
+    B -->|no| Z(["Silent"])
+    B -->|yes| C["1. Fill metadata on new files<br/>(memory-migrate.py)"]
+    C --> D["2. Rebuild MEMORY.md if it drifted<br/>(memory-index.py)"]
+    D --> E["3. Audit<br/>(memory-audit.sh)"]
+    E --> F{"Anything needing judgment?"}
+    F -->|no| Z
+    F -->|yes| G["Print 1 line:<br/>Memory upkeep due: stale=… code-changed=…"]
+    G --> H["When convenient: 'clean up memory'<br/>→ Claude verifies, proposes, you approve"]
+    classDef auto fill:#e6f4ea,stroke:#34a853
+    class C,D,E auto
+```
+
+Steps 1–3 (green) are automatic and deterministic. The plugin **never edits what a memory says**;
+that needs judgment, so Claude proposes and you approve.
+
+### What the audit checks
+
+| Signal | Meaning | Action |
+|---|---|---|
+| **stale** | not verified for 45 days | re-check, bump `verified` |
+| **code changed** | a cited file got commits after `verified` (git) | read the diff, fix or confirm |
+| **broken path** | a cited repo path is gone | fix the path |
+| **over budget** | index > 8 KB, > 45 entries, or a line > 200 chars | shorten, promote, supersede |
+| **promote candidates** | your rule stable > 30 days | move it to project rules |
+
+Real example: a memory said "Dockerfile optimisation pending" and cited `backend/docker/Production.Dockerfile`.
+That file got 2 commits after `verified`, so the audit raised **code changed**. Claude checked, found the PR
+had merged, and updated the memory. Without this, the next session would still believe the work was pending.
 
 ## Design: why it is efficient
 
