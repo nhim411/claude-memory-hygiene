@@ -2,6 +2,8 @@
 # End-to-end checks for the plugin scripts on a throwaway repo + memory dir.
 set -uo pipefail
 S="$(cd "$(dirname "$0")/../scripts" && pwd)"
+# Windows Git Bash: hand native Python C:/… paths, as Claude Code does.
+tmpd() { local d; d=$(mktemp -d); command -v cygpath >/dev/null && d=$(cygpath -m "$d"); echo "$d"; }
 W=$(mktemp -d); M=$(mktemp -d)
 trap 'rm -rf "$W" "$M"' EXIT
 pass=0; fail=0
@@ -57,16 +59,23 @@ printf -- '---\nname: z\ndescription: z\nmetadata:\n  type: project\n---\nSee `s
 out3=$(run); ok "cache invalidated by memory change" 'grep -q "broken-paths=1" <<<"$out3" && [ "$out3" != "$out2" ]'
 
 echo "# usage log"
-U=$(mktemp -d)/.claude/projects/x/memory; mkdir -p "$U"
+U=$(tmpd)/.claude/projects/x/memory; mkdir -p "$U"
+SPQ="$(tmpd)/A B/.claude/projects/y/memory"; mkdir -p "$SPQ"
 printf '{"tool_input":{"file_path":"%s/a.md"}}' "$U" | python3 "$S/memory-usage.py"
 printf '{"tool_input":{"file_path":"%s/MEMORY.md"}}' "$U" | python3 "$S/memory-usage.py"
 printf '{"tool_input":{"file_path":"/etc/hosts"}}' | python3 "$S/memory-usage.py"
 printf '{"tool_input":{"command":"grep -n foo %s/b.md %s/MEMORY.md"}}' "$U" "$U" | python3 "$S/memory-usage.py"
-SP="$(mktemp -d)/First Last/.claude/projects/C--p/memory"; mkdir -p "$SP"
+printf '{"tool_input":{"command":"cat \\"%s/q.md\\""}}' "$SPQ" | python3 "$S/memory-usage.py"
+SP="$(tmpd)/First Last/.claude/projects/C--p/memory"; mkdir -p "$SP"
 printf '{"tool_input":{"file_path":"%s"}}' "$(printf %s "$SP/s.md" | sed 's#/#\\\\#g')" | python3 "$S/memory-usage.py"
+if command -v cygpath >/dev/null; then
+  printf '{"tool_input":{"command":"cat \\"%s/g.md\\""}}' "$(printf %s "$U" | sed -E 's#^([A-Za-z]):/#/\L\1/#')" | python3 "$S/memory-usage.py"
+  ok "Git Bash /c/… path logged (Windows)" 'grep -q "g.md" "$U/.usage.log"'
+fi
 echo 'not json' | python3 "$S/memory-usage.py"; rc=$?
-ok "logs memory file reads only" '[ "$(grep -c "a.md" "$U/.usage.log")" -eq 1 ] && [ "$(wc -l < "$U/.usage.log")" -eq 3 ]'
+ok "logs memory file reads only" '[ "$(grep -c "a.md" "$U/.usage.log")" -eq 1 ] && [ "$(grep -vc "g.md" "$U/.usage.log")" -eq 3 ]'
 ok "logs reads via Bash commands" 'grep -q "b.md" "$U/.usage.log"'
+ok "quoted path with spaces in Bash command" 'grep -q "q.md" "$SPQ/.usage.log"'
 ok "Windows-style path with spaces logged" 'grep -q "s.md" "$SP/.usage.log"'
 ok "bad input never fails the hook" '[ "$rc" -eq 0 ]'
 

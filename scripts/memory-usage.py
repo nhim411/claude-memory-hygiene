@@ -9,11 +9,22 @@ import os
 import re
 import sys
 
+# Quoted paths may contain spaces ("C:/Users/First Last/…"); unquoted ones end at whitespace.
+QUOTED_MEMORY_FILE = re.compile(r"[\"']((?:~|/|[A-Za-z]:/)[^\"']*?/\.claude/projects/[^/\"']+/memory)/([^/\"']+\.md)[\"']")
 MEMORY_FILE = re.compile(r"((?:~|/|[A-Za-z]:/)[^\s'\"`]*?/\.claude/projects/[^/\s]+/memory)/([^/\s'\"`*]+\.md)")
 
 
+def native(path):
+    """Map Git Bash paths (/c/Users/…) to C:/Users/… for a Windows Python."""
+    path = os.path.expanduser(path)
+    m = re.match(r"^/([A-Za-z])/(.*)", path)
+    if os.name == "nt" and m and not os.path.isdir(path):
+        return f"{m.group(1).upper()}:/{m.group(2)}"
+    return path
+
+
 def log_read(mem_dir, name):
-    mem_dir = os.path.expanduser(mem_dir)
+    mem_dir = native(mem_dir)
     if name == "MEMORY.md" or not os.path.isdir(mem_dir):
         return
     log = os.path.join(mem_dir, ".usage.log")
@@ -36,6 +47,7 @@ try:
         hits.add((fp[:m.start(2) - 1], m.group(2)))
     # Bash (cat/grep/sed …) and Grep carry paths inside command / path text.
     text = " ".join(str(tin.get(k, "")) for k in ("command", "path")).replace("\\", "/")
+    hits.update(QUOTED_MEMORY_FILE.findall(text))
     hits.update(MEMORY_FILE.findall(text))
     for mem_dir, name in hits:
         log_read(mem_dir, name)
