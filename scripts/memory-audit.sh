@@ -8,12 +8,20 @@ MEM="${1:-$HOME/.claude/projects/$(printf %s "$REPO" | sed 's#[/.]#-#g')/memory}
 MAX_AGE="${3:-45}"
 today=$(date +%s)
 
-field() { sed -n '/^---$/,/^---$/p' "$2" | grep -m1 -E "^\s*$1:" | sed -E "s/^\s*$1:\s*//; s/\"//g"; }
+# Frontmatter value (CRLF-safe); status defaults to active like the index generator.
+field() {
+  local v
+  v=$(tr -d '\r' < "$2" | sed -n '1{/^---$/!q;};/^---$/,/^---$/p' | grep -m1 -E "^[[:space:]]*$1:" | sed -E "s/^[[:space:]]*$1:[[:space:]]*//; s/\"//g")
+  [ -z "$v" ] && [ "$1" = status ] && v=active
+  printf '%s' "$v"
+}
+# Epoch seconds for YYYY-MM-DD (GNU date, BSD date, or python).
+to_epoch() { date -d "$1" +%s 2>/dev/null || date -j -f %Y-%m-%d "$1" +%s 2>/dev/null || python3 -c "import datetime,sys;print(int(datetime.datetime.strptime(sys.argv[1],'%Y-%m-%d').timestamp()))" "$1"; }
 
 echo "== Missing source/verified/status"
 for f in "$MEM"/*.md; do
   [ "$(basename "$f")" = MEMORY.md ] && continue
-  for k in source verified status; do
+  for k in source verified; do
     [ -z "$(field $k "$f")" ] && echo "  $(basename "$f"): no $k"
   done
 done
@@ -22,7 +30,7 @@ echo "== Active, verified > ${MAX_AGE}d ago (re-check against code / ADO)"
 for f in "$MEM"/*.md; do
   [ "$(field status "$f")" = active ] || continue
   v=$(field verified "$f"); [ -z "$v" ] && continue
-  age=$(( (today - $(date -d "$v" +%s)) / 86400 ))
+  age=$(( (today - $(to_epoch "$v")) / 86400 ))
   [ "$age" -gt "$MAX_AGE" ] && echo "  ${age}d  $(field type "$f")  $(basename "$f")"
 done | sort -rn
 

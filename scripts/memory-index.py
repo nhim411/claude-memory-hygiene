@@ -31,8 +31,10 @@ GROUPS = [
 
 
 def frontmatter(path):
-    text = open(path, encoding="utf-8").read()
+    text = open(path, encoding="utf-8").read().replace("\r\n", "\n")
     m = re.match(r"---\n(.*?)\n---", text, re.S)
+    if not m:
+        return None
     fm = {}
     for line in (m.group(1) if m else "").splitlines():
         kv = re.match(r"\s*([a-z_]+):\s*(.*)", line)
@@ -53,6 +55,8 @@ for f in sorted(os.listdir(MEM)):
     if not f.endswith(".md") or f == "MEMORY.md":
         continue
     fm = frontmatter(os.path.join(MEM, f))
+    if fm is None:  # not a memory file (no frontmatter); migrate adds one
+        continue
     if fm.get("status", "active") != "active":
         continue
     line = curated.get(f) or f"- [{fm.get('name', f[:-3])}]({f}) — {fm.get('description', '')[:150]}"

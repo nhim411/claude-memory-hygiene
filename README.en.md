@@ -86,7 +86,7 @@ python3 scripts/memory-index.py   [memory_dir] [--check]       # rebuild / check
 bash    scripts/memory-audit.sh   [memory_dir] [repo] [days]   # full report, changes nothing
 ```
 
-Requires bash, python3, git, GNU `date`. Tested on Linux / WSL.
+Requires bash, python3, git. CI runs `tests/run.sh` on Linux and macOS.
 
 ## License
 

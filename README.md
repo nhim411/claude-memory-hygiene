@@ -85,7 +85,7 @@ python3 scripts/memory-index.py   [memory_dir] [--check]       # dựng lại / 
 bash    scripts/memory-audit.sh   [memory_dir] [repo] [days]   # báo cáo đầy đủ, không sửa gì
 ```
 
-Cần bash, python3, git, GNU `date`. Đã test trên Linux / WSL.
+Cần bash, python3, git. CI chạy `tests/run.sh` trên Linux và macOS.
 
 ## Giấy phép
 
