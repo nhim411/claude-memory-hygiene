@@ -1,10 +1,13 @@
 #!/usr/bin/env bash
-# SessionStart: auto-fix what is deterministic (index), nudge for what needs judgment.
+# SessionStart: auto-fix what is deterministic (missing metadata, index), nudge for what needs judgment.
 # Silent when nothing is due.
 proj=$(pwd | sed 's#[/.]#-#g')
-MEM="$HOME/.claude/projects/$proj/memory"
+MEM="${MEMORY_HYGIENE_DIR:-$HOME/.claude/projects/$proj/memory}"
 [ -f "$MEM/MEMORY.md" ] || exit 0
 here="$(cd "$(dirname "$0")" && pwd)"
+
+mig=$(python3 "$here/memory-migrate.py" "$MEM" 2>/dev/null)
+case "$mig" in "migrated 0 "*|"") ;; *) echo "memory-hygiene: $mig";; esac
 
 if ! python3 "$here/memory-index.py" "$MEM" --check >/dev/null 2>&1; then
   python3 "$here/memory-index.py" "$MEM" >/dev/null 2>&1 && echo "memory-hygiene: MEMORY.md rebuilt from frontmatter."
