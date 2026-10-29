@@ -14,7 +14,7 @@ relevant context beats more context; memory is consolidated on a schedule.
 | `SessionStart` hook | one-line nudge only when memory needs upkeep; silent otherwise |
 | `scripts/memory-migrate.py` | add `source / verified / status` to existing memory files (idempotent) |
 | `scripts/memory-index.py` | regenerate `MEMORY.md`: active files only, grouped by type, curated lines kept |
-| `scripts/memory-audit.sh` | report stale facts, missing fields, broken repo paths, index drift, cited work items |
+| `scripts/memory-audit.sh` | report stale facts, missing fields, broken repo paths, memories whose cited code changed since `verified` (git), index drift, cited work items |
 | `docs/memory-system.md` | the guideline: where knowledge lives, file format, conflicts, upkeep |
 
 Memory metadata:

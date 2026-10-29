@@ -26,15 +26,34 @@ for f in "$MEM"/*.md; do
   [ "$age" -gt "$MAX_AGE" ] && echo "  ${age}d  $(field type "$f")  $(basename "$f")"
 done | sort -rn
 
+# Backticked repo-relative paths whose first segment is a top-level entry of the repo.
+repo_paths() {
+  grep -oE '`[A-Za-z0-9_.][^` ]*/[^` ]*`' "$1" | tr -d '`' | sort -u | while read -r p; do
+    case "$p" in .*|*'*'*|*'<'*|*'{'*|*'…'*|*foo*|http*|*://*) continue;; esac
+    [ -e "$REPO/${p%%/*}" ] && echo "$p"
+  done
+}
+
 echo "== Repo paths cited but missing (active only)"
 for f in "$MEM"/*.md; do
   [ "$(field status "$f")" = active ] || continue
-  grep -oE '`(scripts|docs|frontend|backend|database|\.claude|\.agents)/[^` ]+`' "$f" | tr -d '`' | sort -u |
-    while read -r p; do
-      case "$p" in *'*'*|*'<'*|*'{'*|*'…'*|*foo*) continue;; esac
-      [ -e "$REPO/$p" ] || echo "  $(basename "$f"): $p"
-    done
+  repo_paths "$f" | while read -r p; do
+    [ -e "$REPO/$p" ] || echo "  $(basename "$f"): $p"
+  done
 done
+
+echo "== Cited code changed since verified (active only; re-check the claim)"
+if git -C "$REPO" rev-parse --git-dir >/dev/null 2>&1; then
+  for f in "$MEM"/*.md; do
+    [ "$(field status "$f")" = active ] || continue
+    v=$(field verified "$f"); [ -z "$v" ] && continue
+    paths=$(repo_paths "$f" | while read -r p; do [ -e "$REPO/$p" ] && echo "$p"; done)
+    [ -z "$paths" ] && continue
+    # shellcheck disable=SC2086
+    n=$(git -C "$REPO" log --oneline --since="$v 23:59" -- $paths 2>/dev/null | wc -l)
+    [ "$n" -gt 0 ] && echo "  $n commits  $(basename "$f")"
+  done | sort -rn
+fi
 
 echo "== Index drift"
 idx="$MEM/MEMORY.md"

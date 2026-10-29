@@ -87,3 +87,24 @@ Scripts are project-agnostic: pass that project's memory dir and repo root. The 
 both from the session cwd, so it already works for every project with a `MEMORY.md`.
 Migrating an old memory dir: add `source/verified/status` to each file (verified = file mtime),
 then run the audit and the index generator.
+
+## 7. Memory and knowledge graphs (graphify etc.)
+
+Memory is **not** stored in or indexed into a knowledge graph. Reasons:
+
+- Scale: a memory dir is tens of files; grep and the generated index find anything instantly.
+  A graph earns its cost on thousands of code/doc nodes, not here.
+- Trust: graph edges from memory text to code would be name-matched (`INFERRED`), the weakest
+  edge type; memory would then inherit graph staleness on top of its own.
+- One source of truth: the graph already covers code + design docs. Memory holds what neither has
+  (user preferences, live context), so duplicating it into the graph adds no answers.
+
+What *was* worth taking from the graph idea is **validity tracking against code**, done with git:
+`memory-audit.sh` lists active memories whose cited repo paths received commits after their
+`verified` date ("Cited code changed since verified"). That is the cheap, exact signal that a
+fact may be stale.
+
+Use the graph *from* upkeep only when a memory makes a structural claim (call chain, "X is the
+only caller of Y"): re-check it with the graph's path / impact query, then bump `verified`.
+Knowledge that grows into a reusable lesson should be promoted to the project's docs, which the
+graph does index.

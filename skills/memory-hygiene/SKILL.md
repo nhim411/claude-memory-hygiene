@@ -30,7 +30,7 @@ of the current working directory.
 
 Run the audit, then per finding:
 
-- **stale** → re-check against code / tracker / command output; bump `verified`, fix, or supersede.
+- **stale** / **cited code changed** → re-check against code / tracker / command output (structural claims: use the project code graph, e.g. graphify path / affected); bump `verified`, fix, or supersede.
 - **broken path** → fix the path; if it names something removed, drop the backticks.
 - **closed work item** → lesson left: promote it, then `status: superseded` + `superseded_by`; none: `status: done`.
 - **codified elsewhere** → `status: superseded`, `superseded_by: <path or skill>`.
