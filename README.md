@@ -36,8 +36,8 @@ phải nạp hàng chục ghi chú cũ, trùng lặp, trỏ tới file đã bị
 - **⬆️ Luật ổn định lên rules của team.** `/memory-hygiene:promote` soạn sẵn rule từ những gì bạn
   đã dặn đi dặn lại, để cả team cùng dùng.
 - **🕰️ Không mất lịch sử.** Thông tin cũ được đánh dấu `superseded`, không bị xoá.
-- **⚡ Nhẹ.** Chỉ bash + python3 + git. Không database, không embedding, không gọi mạng.
-  CI chạy trên Linux và macOS.
+- **⚡ Nhẹ, chạy mọi nơi.** Chỉ bash + Python 3 + git. Không database, không embedding, không gọi mạng.
+  Chạy trên Linux, macOS và Windows (Git Bash có sẵn khi cài Claude Code). CI test cả 3.
 
 ```text
 $ claude          # mở phiên như bình thường
@@ -202,7 +202,7 @@ python3 scripts/memory-index.py   [memory_dir] [--check]       # dựng lại / 
 bash    scripts/memory-audit.sh   [memory_dir] [repo] [days]   # báo cáo đầy đủ, không sửa gì
 ```
 
-Cần bash, python3, git. CI chạy `tests/run.sh` trên Linux và macOS.
+Cần bash, Python 3 (`python3`, `python` hoặc `py`), git. Trên Windows dùng Git Bash, thứ Claude Code vốn đã yêu cầu. CI chạy `tests/run.sh` trên Linux, macOS và Windows.
 
 ## Giấy phép
 

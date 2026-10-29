@@ -13,9 +13,9 @@ of the current working directory.
 
 | Need | Run |
 |---|---|
-| Onboard an existing memory dir | `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/memory-migrate.py` then index |
-| Rebuild `MEMORY.md` | `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/memory-index.py` |
-| Is the index current? | `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/memory-index.py --check` |
+| Onboard an existing memory dir | `bash ${CLAUDE_PLUGIN_ROOT}/scripts/run-py.sh memory-migrate.py` then index |
+| Rebuild `MEMORY.md` | `bash ${CLAUDE_PLUGIN_ROOT}/scripts/run-py.sh memory-index.py` |
+| Is the index current? | `bash ${CLAUDE_PLUGIN_ROOT}/scripts/run-py.sh memory-index.py --check` |
 | Full audit (report only) | `bash ${CLAUDE_PLUGIN_ROOT}/scripts/memory-audit.sh [memory_dir] [repo_root] [max_age_days]` |
 
 ## Writing a memory

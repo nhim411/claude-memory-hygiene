@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
 # SessionStart: auto-fix what is deterministic (missing metadata, index), nudge for what needs judgment.
 # Silent when nothing is due. The audit result is cached until memory, git HEAD or the day changes.
-proj=$(pwd | sed 's#[/.]#-#g')
-MEM="${MEMORY_HYGIENE_DIR:-$HOME/.claude/projects/$proj/memory}"
-[ -f "$MEM/MEMORY.md" ] || exit 0
 here="$(cd "$(dirname "$0")" && pwd)"
+MEM="${MEMORY_HYGIENE_DIR:-$(bash "$here/project-key.sh")}"
+[ -f "$MEM/MEMORY.md" ] || exit 0
+py() { bash "$here/run-py.sh" "$@"; }
 
-mig=$(python3 "$here/memory-migrate.py" "$MEM" 2>/dev/null)
+mig=$(py memory-migrate.py "$MEM" 2>/dev/null)
 case "$mig" in "migrated 0 "*|"") ;; *) echo "memory-hygiene: $mig";; esac
 
-if ! python3 "$here/memory-index.py" "$MEM" --check >/dev/null 2>&1; then
-  python3 "$here/memory-index.py" "$MEM" >/dev/null 2>&1 && echo "memory-hygiene: MEMORY.md rebuilt from frontmatter."
+if ! py memory-index.py "$MEM" --check >/dev/null 2>&1; then
+  py memory-index.py "$MEM" >/dev/null 2>&1 && echo "memory-hygiene: MEMORY.md rebuilt from frontmatter."
 fi
 
 cache="$MEM/.hygiene-cache"

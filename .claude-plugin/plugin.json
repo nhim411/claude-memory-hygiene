@@ -1,6 +1,6 @@
 {
   "name": "memory-hygiene",
-  "version": "0.7.1",
+  "version": "0.8.0",
   "description": "Keep Claude Code auto-memory small, current and trustworthy: provenance/validity/status metadata, a generated MEMORY.md index, an audit, and a SessionStart upkeep nudge.",
   "author": { "name": "nhim411" },
   "repository": "https://github.com/nhim411/claude-memory-hygiene",

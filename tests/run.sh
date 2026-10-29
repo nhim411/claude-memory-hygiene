@@ -62,9 +62,12 @@ printf '{"tool_input":{"file_path":"%s/a.md"}}' "$U" | python3 "$S/memory-usage.
 printf '{"tool_input":{"file_path":"%s/MEMORY.md"}}' "$U" | python3 "$S/memory-usage.py"
 printf '{"tool_input":{"file_path":"/etc/hosts"}}' | python3 "$S/memory-usage.py"
 printf '{"tool_input":{"command":"grep -n foo %s/b.md %s/MEMORY.md"}}' "$U" "$U" | python3 "$S/memory-usage.py"
+SP="$(mktemp -d)/First Last/.claude/projects/C--p/memory"; mkdir -p "$SP"
+printf '{"tool_input":{"file_path":"%s"}}' "$(printf %s "$SP/s.md" | sed 's#/#\\\\#g')" | python3 "$S/memory-usage.py"
 echo 'not json' | python3 "$S/memory-usage.py"; rc=$?
 ok "logs memory file reads only" '[ "$(grep -c "a.md" "$U/.usage.log")" -eq 1 ] && [ "$(wc -l < "$U/.usage.log")" -eq 3 ]'
 ok "logs reads via Bash commands" 'grep -q "b.md" "$U/.usage.log"'
+ok "Windows-style path with spaces logged" 'grep -q "s.md" "$SP/.usage.log"'
 ok "bad input never fails the hook" '[ "$rc" -eq 0 ]'
 
 echo "# unused + duplicates"
@@ -83,5 +86,10 @@ ok "unrelated pair not found" '! grep -q "idle.md ~" <<<"$sig"'
 printf '# since\t%s\n' "$(date +%F)" > "$D/.usage.log"
 sig=$(python3 "$S/memory-signals.py" "$D" 60)
 ok "no unused report before window elapsed" '[ -z "$(sed -n "/Unused/,\$p" <<<"$sig" | grep "^  ")" ]'
+
+echo "# project key"
+ok "linux path" '[ "$(HOME=/h bash "$S/project-key.sh" /home/a/my_app.v2)" = "/h/.claude/projects/-home-a-my-app-v2/memory" ]'
+ok "windows path with spaces" '[ "$(HOME=/h bash "$S/project-key.sh" "C:/Users/LE HOAI NAM/proj")" = "/h/.claude/projects/C--Users-LE-HOAI-NAM-proj/memory" ]'
+ok "python launcher runs" '[ "$(bash "$S/run-py.sh" memory-index.py "$M" --check >/dev/null 2>&1; echo $?)" -le 1 ]'
 
 echo "$pass passed, $fail failed"; [ "$fail" -eq 0 ]

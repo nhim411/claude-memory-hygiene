@@ -36,8 +36,8 @@ stale, duplicated notes pointing at files that no longer exist, and Claude may q
 - **⬆️ Stable rules graduate to team rules.** `/memory-hygiene:promote` drafts project rules from
   what you keep repeating, so the whole team benefits.
 - **🕰️ History is kept.** Old facts are marked `superseded`, never deleted.
-- **⚡ Lightweight.** bash + python3 + git. No database, no embeddings, no network.
-  CI on Linux and macOS.
+- **⚡ Lightweight, runs anywhere.** bash + Python 3 + git. No database, no embeddings, no network.
+  Works on Linux, macOS and Windows (Git Bash, which Claude Code already requires). CI tests all three.
 
 ```text
 $ claude          # start a session as usual
@@ -203,7 +203,7 @@ python3 scripts/memory-index.py   [memory_dir] [--check]       # rebuild / check
 bash    scripts/memory-audit.sh   [memory_dir] [repo] [days]   # full report, changes nothing
 ```
 
-Requires bash, python3, git. CI runs `tests/run.sh` on Linux and macOS.
+Requires bash, Python 3 (`python3`, `python` or `py`), git. On Windows it runs in Git Bash, which Claude Code already requires. CI runs `tests/run.sh` on Linux, macOS and Windows.
 
 ## License
 

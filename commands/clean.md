@@ -9,5 +9,5 @@ Use the memory-hygiene skill (upkeep). Focus: $ARGUMENTS (empty = everything the
    keep (bump `verified`), fix, merge, `superseded`, or `done`.
 3. Show the user a table: file, finding, evidence, proposed action. Changes to `source: user`
    memories need explicit approval; agent-sourced fixes may be applied after the user agrees to the table.
-4. Apply, run `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/memory-index.py"`, and report index entries/bytes before → after
+4. Apply, run `bash "${CLAUDE_PLUGIN_ROOT}/scripts/run-py.sh" memory-index.py`, and report index entries/bytes before → after
    plus what stays unverified.

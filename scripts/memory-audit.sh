@@ -4,7 +4,7 @@
 # Reports only; never edits or deletes.
 set -uo pipefail
 REPO="${2:-$(pwd)}"
-MEM="${1:-$HOME/.claude/projects/$(printf %s "$REPO" | sed 's#[/.]#-#g')/memory}"
+MEM="${1:-$(bash "$(dirname "$0")/project-key.sh")}"
 MAX_AGE="${3:-45}"
 today=$(date +%s)
 
@@ -16,7 +16,7 @@ field() {
   printf '%s' "$v"
 }
 # Epoch seconds for YYYY-MM-DD (GNU date, BSD date, or python).
-to_epoch() { date -d "$1" +%s 2>/dev/null || date -j -f %Y-%m-%d "$1" +%s 2>/dev/null || python3 -c "import datetime,sys;print(int(datetime.datetime.strptime(sys.argv[1],'%Y-%m-%d').timestamp()))" "$1"; }
+to_epoch() { date -d "$1" +%s 2>/dev/null || date -j -f %Y-%m-%d "$1" +%s 2>/dev/null || python -c "import datetime,sys;print(int(datetime.datetime.strptime(sys.argv[1],'%Y-%m-%d').timestamp()))" "$1"; }
 
 echo "== Missing source/verified/status"
 for f in "$MEM"/*.md; do
@@ -78,7 +78,7 @@ grep -oE '\(([^)]+\.md)\)' "$idx" | tr -d '()' | while read -r b; do
   [ -f "$MEM/$b" ] || echo "  index points to missing file: $b"
 done
 
-python3 "$(dirname "$0")/memory-signals.py" "$MEM" "${MEMORY_UNUSED_DAYS:-60}"
+bash "$(dirname "$0")/run-py.sh" memory-signals.py "$MEM" "${MEMORY_UNUSED_DAYS:-60}"
 
 MAX_BYTES="${MEMORY_INDEX_MAX_BYTES:-8000}"
 MAX_ENTRIES="${MEMORY_INDEX_MAX_ENTRIES:-45}"

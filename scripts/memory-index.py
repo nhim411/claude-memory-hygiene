@@ -12,7 +12,7 @@ import sys
 args = [a for a in sys.argv[1:] if not a.startswith("--")]
 CHECK = "--check" in sys.argv
 MEM = args[0] if args else os.path.expanduser(
-    "~/.claude/projects/" + re.sub(r"[/.]", "-", os.getcwd()) + "/memory")
+    "~/.claude/projects/" + re.sub(r"[^A-Za-z0-9]", "-", os.getcwd()) + "/memory")
 IDX = os.path.join(MEM, "MEMORY.md")
 
 HEADER = [

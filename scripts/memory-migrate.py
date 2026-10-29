@@ -11,7 +11,7 @@ import re
 import sys
 
 MEM = sys.argv[1] if len(sys.argv) > 1 else os.path.expanduser(
-    "~/.claude/projects/" + re.sub(r"[/.]", "-", os.getcwd()) + "/memory")
+    "~/.claude/projects/" + re.sub(r"[^A-Za-z0-9]", "-", os.getcwd()) + "/memory")
 
 
 def migrate(path):

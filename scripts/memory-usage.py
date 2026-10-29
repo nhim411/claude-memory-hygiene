@@ -9,7 +9,7 @@ import os
 import re
 import sys
 
-MEMORY_FILE = re.compile(r"((?:~|/)[^\s'\"`]*?/\.claude/projects/[^/\s]+/memory)/([^/\s'\"`*]+\.md)")
+MEMORY_FILE = re.compile(r"((?:~|/|[A-Za-z]:/)[^\s'\"`]*?/\.claude/projects/[^/\s]+/memory)/([^/\s'\"`*]+\.md)")
 
 
 def log_read(mem_dir, name):
@@ -28,9 +28,16 @@ def log_read(mem_dir, name):
 try:
     data = json.load(sys.stdin)
     tin = data.get("tool_input") or {}
-    # Read passes file_path; Bash (cat/grep/sed …) and Grep carry paths in command / path.
-    text = " ".join(str(tin.get(k, "")) for k in ("file_path", "command", "path")).replace("\\", "/")
-    for mem_dir, name in set(MEMORY_FILE.findall(text)):
+    hits = set()
+    # Read passes one exact path (may contain spaces, e.g. C:\Users\First Last\…).
+    fp = str(tin.get("file_path", "")).replace("\\", "/")
+    m = re.search(r"(/\.claude/projects/[^/]+/memory)/([^/]+\.md)$", fp)
+    if m:
+        hits.add((fp[:m.start(2) - 1], m.group(2)))
+    # Bash (cat/grep/sed …) and Grep carry paths inside command / path text.
+    text = " ".join(str(tin.get(k, "")) for k in ("command", "path")).replace("\\", "/")
+    hits.update(MEMORY_FILE.findall(text))
+    for mem_dir, name in hits:
         log_read(mem_dir, name)
 except Exception:  # a logging hook must never block Claude
     pass
