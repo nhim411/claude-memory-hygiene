@@ -70,6 +70,21 @@ grep -oE '\(([^)]+\.md)\)' "$idx" | tr -d '()' | while read -r b; do
   [ -f "$MEM/$b" ] || echo "  index points to missing file: $b"
 done
 
+MAX_BYTES="${MEMORY_INDEX_MAX_BYTES:-8000}"
+MAX_ENTRIES="${MEMORY_INDEX_MAX_ENTRIES:-45}"
+MAX_LINE="${MEMORY_INDEX_MAX_LINE:-200}"
+echo "== Index over budget (loaded every session; promote or supersede)"
+bytes=$(wc -c < "$idx"); entries=$(grep -c '^- ' "$idx")
+[ "$bytes" -gt "$MAX_BYTES" ] && echo "  size ${bytes}B > ${MAX_BYTES}B"
+[ "$entries" -gt "$MAX_ENTRIES" ] && echo "  entries $entries > $MAX_ENTRIES"
+awk -v max="$MAX_LINE" '/^- / && length($0) > max { match($0, /\(([^)]+\.md)\)/); print "  long line (" length($0) " chars): " substr($0, RSTART+1, RLENGTH-2) }' "$idx"
+
+# Informational only (not counted by the SessionStart nudge).
+echo "== Promote candidates: user rules stable > 30d (move to project rules / AGENTS.md, then supersede)"
+find "$MEM" -name '*.md' ! -name MEMORY.md -mtime +30 | sort | while read -r f; do
+  [ "$(field status "$f")" = active ] && [ "$(field type "$f")" = feedback ] && echo "  $(basename "$f")"
+done
+
 echo "== Work items cited by active project memories (check if Done)"
 for f in "$MEM"/*.md; do
   [ "$(field status "$f")" = active ] && [ "$(field type "$f")" = project ] || continue

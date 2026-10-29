@@ -15,7 +15,7 @@ fi
 
 out=$(bash "$here/memory-audit.sh" "$MEM" "$(pwd)" 45 2>/dev/null)
 count() { printf '%s\n' "$out" | sed -n "/^== $1/,/^==/p" | grep -c '^  '; }
-stale=$(count Active); missing=$(count Missing); broken=$(count Repo); changed=$(count Cited); drift=$(count Index)
-total=$((stale + missing + broken + changed + drift))
+stale=$(count Active); missing=$(count Missing); broken=$(count Repo); changed=$(count Cited); drift=$(count "Index drift"); budget=$(count "Index over")
+total=$((stale + missing + broken + changed + drift + budget))
 [ "$total" -eq 0 ] && exit 0
-echo "Memory upkeep due: stale=$stale missing-fields=$missing broken-paths=$broken code-changed=$changed index-drift=$drift. Run the memory-hygiene skill (upkeep) when the current task allows; do not interrupt urgent work."
+echo "Memory upkeep due: stale=$stale missing-fields=$missing broken-paths=$broken code-changed=$changed index-drift=$drift over-budget=$budget. Run the memory-hygiene skill (upkeep) when the current task allows; do not interrupt urgent work."

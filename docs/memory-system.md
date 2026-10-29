@@ -51,7 +51,8 @@ ${CLAUDE_PLUGIN_ROOT}/scripts/memory-index.py            # rebuild (keeps existi
 ${CLAUDE_PLUGIN_ROOT}/scripts/memory-index.py --check    # exit 1 when out of date
 ```
 
-Budget: keep the index under ~8 KB / 45 entries. Over budget → promote or supersede, not trim wording.
+Budget: index ≤ 8 KB, ≤ 45 entries, each line ≤ 200 chars (env `MEMORY_INDEX_MAX_*`). Each line = title + one hook;
+detail lives in the file. Over budget → shorten lines, then promote or supersede.
 
 ## 4. Writing a memory (every session)
 
@@ -63,7 +64,7 @@ Budget: keep the index under ~8 KB / 45 entries. Over budget → promote or supe
 
 ## 5. Upkeep (regular update mechanism)
 
-- **Automatic nudge:** a `SessionStart` hook runs `${CLAUDE_PLUGIN_ROOT}/scripts/memory-health.sh`.
+- **Automatic fixes + nudge:** a `SessionStart` hook fills missing metadata and rebuilds the index, then runs `${CLAUDE_PLUGIN_ROOT}/scripts/memory-health.sh`.
   It prints one line only when something is due (stale > 45 days, missing fields, broken
   repo paths, index drift). Silent otherwise.
 - **When nudged** (and the current task is not urgent), run:

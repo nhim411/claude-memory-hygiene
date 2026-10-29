@@ -33,6 +33,8 @@ Run the audit, then per finding:
 - **stale** / **cited code changed** → re-check against code / tracker / command output (structural claims: use the project code graph, e.g. graphify path / affected); bump `verified`, fix, or supersede.
 - **broken path** → fix the path; if it names something removed, drop the backticks.
 - **closed work item** → lesson left: promote it, then `status: superseded` + `superseded_by`; none: `status: done`.
+- **over budget** → shorten long index lines (title + one hook, < 200 chars), then promote or supersede until under budget.
+- **promote candidate** → propose moving the rule to project rules / AGENTS.md; after the user agrees, supersede the memory.
 - **codified elsewhere** → `status: superseded`, `superseded_by: <path or skill>`.
 
 Never delete files (non-active files are history) unless the user asks. Never change the
