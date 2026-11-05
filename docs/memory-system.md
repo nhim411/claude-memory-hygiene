@@ -31,6 +31,7 @@ metadata:
   verified: YYYY-MM-DD        # last time checked against code / ADO / the system
   status: active | superseded | done
   superseded_by: <slug or path>   # only when superseded
+  when: <task context it applies to>  # feedback: e.g. "writing a migration"; searched first
 ---
 <the fact; feedback/project add **Why:** and **How to apply:**; link [[other-slug]]>
 ```
@@ -61,6 +62,18 @@ detail lives in the file. Over budget → shorten lines, then promote or superse
 3. Fill all metadata; `verified` = today; `source: user` only for what the user actually said.
 4. Absolute dates, no "yesterday / next sprint".
 5. Run `memory-index.py`.
+
+## 4b. Recalling a memory
+
+The index only lists active files and has a size budget, so relevant memories may not be in
+view. Before a non-trivial task, search by the task's context:
+
+```bash
+${CLAUDE_PLUGIN_ROOT}/scripts/memory-search.py "write migration add column"   # -k N, --all, --dir
+```
+
+BM25 ranks by text match (`when` ×3, name/description ×2, body ×1; case and diacritics
+ignored). A hit is relevant, not necessarily correct: check `verified` / `source` first.
 
 ## 5. Upkeep (regular update mechanism)
 

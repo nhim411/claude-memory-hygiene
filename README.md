@@ -48,6 +48,7 @@ Kết quả trên một dự án thật:
 - 🧹 **Tự sửa phần chắc chắn, hỏi phần cần phán đoán.**
 - 🛡️ **Không tự sửa điều bạn đã dặn.**
 - 📉 **Index luôn nhỏ**: giới hạn kích thước, báo memory không ai đọc.
+- 🔎 **Tìm memory theo ngữ cảnh việc** (BM25, `memory-search.py`): memory không nằm trong index vẫn tìm được.
 - ⚡ **Nhẹ**: bash + Python 3 + git, không database, không gọi mạng.
 
 📖 Chi tiết: [Cách hoạt động](docs/how-it-works.vi.md) · [Hướng dẫn memory](docs/memory-system.md)

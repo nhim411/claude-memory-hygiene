@@ -96,6 +96,22 @@ printf '# since\t%s\n' "$(date +%F)" > "$D/.usage.log"
 sig=$(python3 "$S/memory-signals.py" "$D" 60)
 ok "no unused report before window elapsed" '[ -z "$(sed -n "/Unused/,\$p" <<<"$sig" | grep "^  ")" ]'
 
+echo "# search"
+Q=$(mktemp -d)
+printf -- '---\nname: intro\ndescription: video opening\nmetadata:\n  type: feedback\n  status: active\n  when: mở đầu video kỹ thuật\n---\nShow the situation before the definition.\n' > "$Q/intro.md"
+printf -- '---\nname: dialog\ndescription: narration style\nmetadata:\n  type: feedback\n  status: active\n---\nOne idea per sentence in video narration.\n' > "$Q/dialog.md"
+printf -- '---\nname: old\ndescription: video opening old\nmetadata:\n  type: feedback\n  status: superseded\n---\nx\n' > "$Q/old.md"
+r=$(python3 "$S/memory-search.py" --dir "$Q" mo dau video)
+ok "search ranks when-match first, diacritics folded" '[ "$(sed -n 1p <<<"$r" | awk "{print \$2}")" = intro.md ]'
+ok "search skips non-active" '! grep -q old.md <<<"$r"'
+ok "search --all includes non-active" 'python3 "$S/memory-search.py" --dir "$Q" --all opening | grep -q old.md'
+ok "search folds plurals and slug words" 'python3 "$S/memory-search.py" --dir "$Q" -k 1 dialogs | grep -q dialog.md'
+printf '\xff\xfe bad' > "$Q/bin.md"
+ok "search survives non-UTF-8 file" 'python3 "$S/memory-search.py" --dir "$Q" video | grep -q intro.md'
+ok "search no match" '[ "$(python3 "$S/memory-search.py" --dir "$Q" kubernetes)" = "no match" ]'
+a=$(bash "$S/memory-audit.sh" "$Q" "$W" 2>/dev/null)
+ok "audit lists feedback without when" 'sed -n "/without/,/^==/p" <<<"$a" | grep -q dialog.md && ! sed -n "/without/,/^==/p" <<<"$a" | grep -q intro.md'
+
 echo "# project key"
 ok "linux path" '[ "$(HOME=/h bash "$S/project-key.sh" /home/a/my_app.v2)" = "/h/.claude/projects/-home-a-my-app-v2/memory" ]'
 ok "windows path with spaces" '[ "$(HOME=/h bash "$S/project-key.sh" "C:/Users/LE HOAI NAM/proj")" = "/h/.claude/projects/C--Users-LE-HOAI-NAM-proj/memory" ]'

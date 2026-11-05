@@ -95,6 +95,12 @@ find "$MEM" -name '*.md' ! -name MEMORY.md -mtime +30 | sort | while read -r f; 
   [ "$(field status "$f")" = active ] && [ "$(field type "$f")" = feedback ] && echo "  $(basename "$f")"
 done
 
+echo "== Feedback without \`when\` (add the task context it applies to, so memory-search finds it)"
+for f in "$MEM"/*.md; do
+  [ "$(field status "$f")" = active ] && [ "$(field type "$f")" = feedback ] || continue
+  [ -z "$(field when "$f")" ] && echo "  $(basename "$f")"
+done
+
 echo "== Work items cited by active project memories (check if Done)"
 for f in "$MEM"/*.md; do
   [ "$(field status "$f")" = active ] && [ "$(field type "$f")" = project ] || continue
