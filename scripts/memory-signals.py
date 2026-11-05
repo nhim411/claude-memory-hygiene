@@ -18,7 +18,7 @@ STOP = set("a an the and or of to in on for with is are be by as at from not no 
 
 
 def frontmatter(path):
-    text = open(path, encoding="utf-8").read().replace("\r\n", "\n")
+    text = open(path, encoding="utf-8", errors="replace").read().replace("\r\n", "\n")
     m = re.match(r"---\n(.*?)\n---", text, re.S)
     fm = {"_body": text[m.end():m.end() + 600] if m else text[:600]}
     for line in (m.group(1) if m else "").splitlines():
@@ -54,7 +54,7 @@ for (a, fa), (b, fb) in itertools.combinations(active.items(), 2):
 print(f"== Unused: active, not opened in {UNUSED_DAYS}d (drop from index or supersede)")
 log = os.path.join(MEM, ".usage.log")
 if os.path.exists(log):
-    lines = [l.rstrip("\n").split("\t") for l in open(log, encoding="utf-8") if "\t" in l]
+    lines = [l.rstrip("\n").split("\t") for l in open(log, encoding="utf-8", errors="replace") if "\t" in l]
     since = next((l[1] for l in lines if l[0] == "# since"), None)
     cutoff = (datetime.date.today() - datetime.timedelta(days=UNUSED_DAYS)).isoformat()
     if since and since <= cutoff:
@@ -62,3 +62,27 @@ if os.path.exists(log):
         for f, fm in active.items():
             if f not in recent and fm.get("type") != "feedback":
                 print(f"  {f}")
+
+# Informational: did recall suggestions (memory-recall.py) lead to the memory being opened?
+rlog = os.path.join(MEM, ".recall.log")
+if os.path.exists(rlog):
+    cutoff = (datetime.date.today() - datetime.timedelta(days=UNUSED_DAYS)).isoformat()
+    sugg = [l.rstrip("\n").split("\t") for l in open(rlog, encoding="utf-8", errors="replace")]
+    sugg = [s for s in sugg if len(s) == 3 and s[0] >= cutoff]
+    opened = {}
+    if os.path.exists(log):
+        for l in open(log, encoding="utf-8", errors="replace"):
+            p = l.rstrip("\n").split("\t")
+            if len(p) == 2 and p[0] != "# since":
+                opened.setdefault(p[1], []).append(p[0])
+    per = {}
+    for day, _, f in sugg:
+        hit = any(d >= day for d in opened.get(f, []))
+        n, h = per.get(f, (0, 0))
+        per[f] = (n + 1, h + hit)
+    total, used = sum(n for n, _ in per.values()), sum(h for _, h in per.values())
+    print(f"== Recall: {total} suggestions in {UNUSED_DAYS}d, {used} opened afterwards "
+          f"(often suggested, never opened: sharpen `when` / description)")
+    for f, (n, h) in sorted(per.items(), key=lambda x: -x[1][0]):
+        if n >= 3 and h == 0 and f in active:
+            print(f"  {n}x  {f}")

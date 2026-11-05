@@ -112,6 +112,37 @@ ok "search no match" '[ "$(python3 "$S/memory-search.py" --dir "$Q" kubernetes)"
 a=$(bash "$S/memory-audit.sh" "$Q" "$W" 2>/dev/null)
 ok "audit lists feedback without when" 'sed -n "/without/,/^==/p" <<<"$a" | grep -q dialog.md && ! sed -n "/without/,/^==/p" <<<"$a" | grep -q intro.md'
 
+echo "# recall hook"
+rc() { python3 -c 'import json,sys;print(json.dumps({"prompt":sys.argv[1],"session_id":sys.argv[2]}))' "$1" "$2" | MEMORY_HYGIENE_DIR="$Q" MEMORY_RECALL_MIN_SCORE=0.5 python3 "$S/memory-recall.py"; }
+r=$(rc "viết mở đầu video kỹ thuật mới" s1)
+ok "recall suggests matching memory" 'grep -q intro.md <<<"$r"'
+ok "recall logs suggestion" 'grep -q "s1	intro.md" "$Q/.recall.log"'
+ok "recall silent on repeat in same session" '[ -z "$(rc "viết mở đầu video kỹ thuật mới" s1)" ]'
+ok "recall again in a new session" 'rc "viết mở đầu video kỹ thuật mới" s2 | grep -q intro.md'
+ok "recall silent on short prompt" '[ -z "$(rc "ok video" s3)" ]'
+ok "recall silent on slash command" '[ -z "$(rc "/memory-hygiene:audit video opening intro" s3)" ]'
+ok "recall disabled by env" '[ -z "$(MEMORY_RECALL=0 rc "viết mở đầu video kỹ thuật mới" s4)" ]'
+ok "recall silent below threshold" '[ -z "$(python3 -c "import json;print(json.dumps({\"prompt\":\"viết mở đầu video kỹ thuật\",\"session_id\":\"s5\"}))" | MEMORY_HYGIENE_DIR="$Q" MEMORY_RECALL_MIN_SCORE=99 python3 "$S/memory-recall.py")" ]'
+echo "bad" | MEMORY_HYGIENE_DIR="$Q" python3 "$S/memory-recall.py"; ok "recall never fails on bad input" '[ $? -eq 0 ]'
+for i in 1 2 3; do printf '%s\tx%s\tdialog.md\n' "$(date +%F)" "$i" >> "$Q/.recall.log"; done
+printf '# since\t%s\n%s\tintro.md\n' "$(date +%F)" "$(date +%F)" > "$Q/.usage.log"
+sig=$(python3 "$S/memory-signals.py" "$Q" 60)
+ok "recall stats count opened suggestions" 'grep -qE "Recall: [0-9]+ suggestions.*[1-9][0-9]* opened" <<<"$sig"'
+ok "never-opened suggestion listed" 'sed -n "/Recall/,\$p" <<<"$sig" | grep -q "3x  dialog.md"'
+sed -i.bak 's/  status: active/  status: active\n  recurrences: 3/' "$Q/dialog.md" 2>/dev/null; python3 - "$Q/dialog.md" <<'PY'
+import sys; p=sys.argv[1]; s=open(p).read().replace("  status: active\n","  status: active\n  recurrences: 3\n",1); open(p,"w").write(s)
+PY
+a=$(bash "$S/memory-audit.sh" "$Q" "$W" 2>/dev/null)
+ok "audit lists repeated corrections" 'sed -n "/Repeated/,/^==/p" <<<"$a" | grep -q "3x  dialog.md"'
+
+echo "# non-UTF-8 memory file"
+B=$(mktemp -d); echo "# Memory Index" > "$B/MEMORY.md"; printf '\xff\xfe bad' > "$B/bin.md"
+printf -- '---\nname: a\ndescription: a\nmetadata:\n  type: user\n---\nx\n' > "$B/a.md"
+out=$(cd "$W" && MEMORY_HYGIENE_DIR="$B" MEMORY_HYGIENE_NO_CACHE=1 bash "$S/memory-health.sh" 2>&1)
+ok "health still rebuilds index" 'grep -q "(a.md)" "$B/MEMORY.md"'
+ok "undecodable file left untouched" '[ "$(head -c 2 "$B/bin.md" | od -An -tx1 | tr -d " ")" = fffe ]'
+ok "no traceback" '! grep -q Traceback <<<"$out"'
+
 echo "# project key"
 ok "linux path" '[ "$(HOME=/h bash "$S/project-key.sh" /home/a/my_app.v2)" = "/h/.claude/projects/-home-a-my-app-v2/memory" ]'
 ok "windows path with spaces" '[ "$(HOME=/h bash "$S/project-key.sh" "C:/Users/LE HOAI NAM/proj")" = "/h/.claude/projects/C--Users-LE-HOAI-NAM-proj/memory" ]'

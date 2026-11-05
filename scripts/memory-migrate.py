@@ -15,7 +15,10 @@ MEM = sys.argv[1] if len(sys.argv) > 1 else os.path.expanduser(
 
 
 def migrate(path):
-    raw = open(path, encoding="utf-8", newline="").read()
+    try:
+        raw = open(path, encoding="utf-8", newline="").read()
+    except UnicodeDecodeError:  # never rewrite a file we cannot decode
+        return False
     eol = "\r\n" if "\r\n" in raw else "\n"
     text = raw.replace("\r\n", "\n")
     stat = os.stat(path)

@@ -48,7 +48,7 @@ Results on a real project:
 - 🧹 **Auto-fixes the certain, asks about the rest.**
 - 🛡️ **Never rewrites what you told it.**
 - 📉 **Keeps the index small**: size budget, reports memories nobody reads.
-- 🔎 **Finds memories by task context** (BM25, `memory-search.py`): memories outside the index stay reachable.
+- 🔎 **Suggests relevant memories** on each prompt (BM25, at most 3 lines, only on a clear match) plus `memory-search.py`; measures how often suggestions get opened.
 - ⚡ **Lightweight**: bash + Python 3 + git, no database, no network.
 
 📖 More: [How it works](docs/how-it-works.md) · [Memory guideline](docs/memory-system.md)

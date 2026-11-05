@@ -31,6 +31,7 @@ metadata:
   verified: YYYY-MM-DD        # last time checked against code / ADO / the system
   status: active | superseded | done
   superseded_by: <slug or path>   # only when superseded
+  recurrences: <n>              # times the user had to repeat this correction (>= 2 → promote)
   when: <task context it applies to>  # feedback: e.g. "writing a migration"; searched first
 ---
 <the fact; feedback/project add **Why:** and **How to apply:**; link [[other-slug]]>
@@ -74,6 +75,11 @@ ${CLAUDE_PLUGIN_ROOT}/scripts/memory-search.py "write migration add column"   # 
 
 BM25 ranks by text match (`when` ×3, name/description ×2, body ×1; case and diacritics
 ignored). A hit is relevant, not necessarily correct: check `verified` / `source` first.
+
+A `UserPromptSubmit` hook (`memory-recall.py`) runs the same ranking on every prompt and prints
+up to 3 hits scoring ≥ 5, each once per session. Tune with `MEMORY_RECALL_MIN_SCORE`,
+`MEMORY_RECALL_MAX`; disable with `MEMORY_RECALL=0`. Suggestions go to `.recall.log`; the
+audit reports how many were opened afterwards and which are suggested but never opened.
 
 ## 5. Upkeep (regular update mechanism)
 

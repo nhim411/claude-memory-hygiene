@@ -21,12 +21,15 @@ of the current working directory.
 
 ## Recalling
 
-Before a non-trivial task, run memory-search with the task's context and read the top hits;
+The UserPromptSubmit hook already suggests up to 3 matching memories per prompt; open one only
+if it fits. Before a non-trivial task the hook may not cover, run memory-search with the task's context and read the top hits;
 the index does not list everything. A hit is relevant, not proven correct: check `verified`.
 
 ## Writing a memory
 
-1. Grep the memory dir; update an existing file instead of adding a duplicate.
+1. Grep the memory dir; update an existing file instead of adding a duplicate. If the user is
+   correcting something an existing memory already covers, increment `metadata.recurrences`
+   (start at 2) and sharpen its `when` / wording: it failed to prevent the mistake.
 2. If the fact belongs in a rule, skill or knowledge doc, put it there instead (guideline §1).
 3. Frontmatter `metadata`: `type`, `source` (user only if the user said it), `verified` (today),
    `status: active`. Absolute dates. For `feedback`, add `when:` = the task context it
@@ -44,6 +47,8 @@ Run the audit, then per finding:
 - **promote candidate** → propose moving the rule to project rules / AGENTS.md; after the user agrees, supersede the memory.
 - **unused** (not opened for the window) → `feedback` never appears here; for others drop from the index by superseding, or keep if still needed soon.
 - **related pair** → read both; merge into one file and supersede the other only if they state the same fact.
+- **repeated correction** (`recurrences` >= 2) → propose promoting to project rules (always loaded); memory recall was not enough.
+- **recall never opened** → sharpen `when` / description so it stops matching unrelated prompts.
 - **feedback without `when`** → add the task context it applies to (no meaning change, allowed on `source: user`).
 - **codified elsewhere** → `status: superseded`, `superseded_by: <path or skill>`.
 

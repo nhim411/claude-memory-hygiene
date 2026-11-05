@@ -31,7 +31,7 @@ GROUPS = [
 
 
 def frontmatter(path):
-    text = open(path, encoding="utf-8").read().replace("\r\n", "\n")
+    text = open(path, encoding="utf-8", errors="replace").read().replace("\r\n", "\n")
     m = re.match(r"---\n(.*?)\n---", text, re.S)
     if not m:
         return None
@@ -43,7 +43,7 @@ def frontmatter(path):
     return fm
 
 
-old = open(IDX, encoding="utf-8").read() if os.path.exists(IDX) else ""
+old = open(IDX, encoding="utf-8", errors="replace").read() if os.path.exists(IDX) else ""
 curated = {}
 for line in old.splitlines():
     m = re.match(r"- \[.*?\]\(([^)]+)\)", line)
@@ -74,5 +74,5 @@ if new.strip() == old.strip():
 if CHECK:
     print("MEMORY.md out of date — run memory-index.py")
     sys.exit(1)
-open(IDX, "w", encoding="utf-8").write(new)
+open(IDX, "w", encoding="utf-8", errors="replace").write(new)
 print(f"MEMORY.md rebuilt: {sum(map(len, buckets.values()))} entries, {len(new.encode())} bytes")

@@ -1,10 +1,38 @@
 {
   "hooks": {
     "SessionStart": [
-      { "hooks": [ { "type": "command", "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/memory-health.sh\"", "timeout": 15 } ] }
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/memory-health.sh\"",
+            "timeout": 15
+          }
+        ]
+      }
     ],
     "PostToolUse": [
-      { "matcher": "Read|Bash|Grep", "hooks": [ { "type": "command", "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/run-py.sh\" memory-usage.py", "timeout": 5 } ] }
+      {
+        "matcher": "Read|Bash|Grep",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/run-py.sh\" memory-usage.py",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/run-py.sh\" memory-recall.py",
+            "timeout": 5
+          }
+        ]
+      }
     ]
   }
 }

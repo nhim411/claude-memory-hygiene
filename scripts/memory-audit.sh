@@ -95,6 +95,12 @@ find "$MEM" -name '*.md' ! -name MEMORY.md -mtime +30 | sort | while read -r f; 
   [ "$(field status "$f")" = active ] && [ "$(field type "$f")" = feedback ] && echo "  $(basename "$f")"
 done
 
+echo "== Repeated corrections: recurrences >= 2 (memory alone did not stop it; promote to a rule)"
+for f in "$MEM"/*.md; do
+  [ "$(field status "$f")" = active ] || continue
+  r=$(field recurrences "$f"); [ -n "$r" ] && [ "$r" -ge 2 ] 2>/dev/null && echo "  ${r}x  $(basename "$f")"
+done | sort -rn
+
 echo "== Feedback without \`when\` (add the task context it applies to, so memory-search finds it)"
 for f in "$MEM"/*.md; do
   [ "$(field status "$f")" = active ] && [ "$(field type "$f")" = feedback ] || continue
