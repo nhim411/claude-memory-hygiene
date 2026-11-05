@@ -9,6 +9,8 @@ import os
 import sys
 
 sys.dont_write_bytecode = True
+# Windows consoles default to cp1252; memory text is often Vietnamese/Japanese.
+sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import memory_bm25 as bm  # noqa: E402
 

@@ -15,6 +15,7 @@ try:
     if os.environ.get("MEMORY_RECALL", "1") == "0":
         sys.exit(0)
     sys.dont_write_bytecode = True
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")  # cp1252 on Windows
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
     import memory_bm25 as bm
 

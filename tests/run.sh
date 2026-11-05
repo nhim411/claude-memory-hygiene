@@ -113,7 +113,7 @@ a=$(bash "$S/memory-audit.sh" "$Q" "$W" 2>/dev/null)
 ok "audit lists feedback without when" 'sed -n "/without/,/^==/p" <<<"$a" | grep -q dialog.md && ! sed -n "/without/,/^==/p" <<<"$a" | grep -q intro.md'
 
 echo "# recall hook"
-rc() { python3 -c 'import json,sys;print(json.dumps({"prompt":sys.argv[1],"session_id":sys.argv[2]}))' "$1" "$2" | MEMORY_HYGIENE_DIR="$Q" MEMORY_RECALL_MIN_SCORE=0.5 python3 "$S/memory-recall.py"; }
+rc() { python3 -c 'import json,sys;print(json.dumps({"prompt":sys.argv[1],"session_id":sys.argv[2]}))' "$1" "$2" | MEMORY_HYGIENE_DIR="$Q" MEMORY_RECALL_MIN_SCORE="${MIN:-0.5}" python3 "$S/memory-recall.py"; }
 r=$(rc "viết mở đầu video kỹ thuật mới" s1)
 ok "recall suggests matching memory" 'grep -q intro.md <<<"$r"'
 ok "recall logs suggestion" 'grep -q "s1	intro.md" "$Q/.recall.log"'
@@ -122,7 +122,9 @@ ok "recall again in a new session" 'rc "viết mở đầu video kỹ thuật m�
 ok "recall silent on short prompt" '[ -z "$(rc "ok video" s3)" ]'
 ok "recall silent on slash command" '[ -z "$(rc "/memory-hygiene:audit video opening intro" s3)" ]'
 ok "recall disabled by env" '[ -z "$(MEMORY_RECALL=0 rc "viết mở đầu video kỹ thuật mới" s4)" ]'
-ok "recall silent below threshold" '[ -z "$(python3 -c "import json;print(json.dumps({\"prompt\":\"viết mở đầu video kỹ thuật\",\"session_id\":\"s5\"}))" | MEMORY_HYGIENE_DIR="$Q" MEMORY_RECALL_MIN_SCORE=99 python3 "$S/memory-recall.py")" ]'
+ok "recall silent below threshold" '[ -z "$(MIN=99 rc "viết mở đầu video kỹ thuật mới" s5)" ]'
+ok "search prints non-ASCII on a cp1252 console" 'PYTHONIOENCODING=cp1252 python3 "$S/memory-search.py" --dir "$Q" video | grep -q intro.md'
+ok "recall prints non-ASCII on a cp1252 console" 'PYTHONIOENCODING=cp1252 rc "viết mở đầu video kỹ thuật mới" s6 | grep -q intro.md'
 echo "bad" | MEMORY_HYGIENE_DIR="$Q" python3 "$S/memory-recall.py"; ok "recall never fails on bad input" '[ $? -eq 0 ]'
 for i in 1 2 3; do printf '%s\tx%s\tdialog.md\n' "$(date +%F)" "$i" >> "$Q/.recall.log"; done
 printf '# since\t%s\n%s\tintro.md\n' "$(date +%F)" "$(date +%F)" > "$Q/.usage.log"
